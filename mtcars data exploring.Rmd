@@ -1,0 +1,125 @@
+---
+title: "mtcars data exploring"
+author: "maesh"
+date: "5/2/2021"
+output: pdf_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Summary
+**objective**
+In this course I explore the relationship between a set of variables and miles per gallon (MPG)
+
+Particularly I focus on the following two questions:
+1. Is an automatic or manual transmission better for MPG?
+2. Quantify the MPG difference between automatic and manual transmissions.
+
+**procedure**
+Firstly exploratory analysis are conducted. As graphs showed, there ware some relationships between mpg and other variables. Then several fit models were compared in order to inspect whether these variables were properly included in the model.
+Outliers were checked by using Q-Q plot and removed.
+
+**conclusion**
+From the analysis of variance, transmission, number of cylinders, Gross horsepower were included in the fitted model.
+Manual transmission is concluded to be better for mpg by 3.77 miles per gallon.
+
+## exploratory data analysis
+**processing data**
+
+```{r processing data, echo=FALSE, cache=TRUE,warning=FALSE}
+#load required package
+library(ggplot2)
+library(gridExtra)
+data(mtcars)
+str(mtcars)
+```
+
+**compare mpg vs other valuables**
+(Graphs are shown in appendices) 
+As the graph shows, transmission and other variables seem to affect on mileage.
+
+## model selection
+
+I created several fitted model which contains variables of mpg datasets.
+Then I compared these fitted model by using analysis of variance (anova) to tell which variables are necessary to explain mileage change.
+```{r, modelselection, fig.height=4, echo=FALSE, cache=TRUE}
+fit1<-lm(mpg~factor(am),data=mtcars)
+fit2<-update(fit1,mpg~factor(am)+factor(cyl))
+fit3<-update(fit1,mpg~factor(am)+factor(cyl)+disp)
+fit4<-update(fit1,mpg~factor(am)+factor(cyl)+disp+hp)
+fit5<-update(fit1,mpg~factor(am)+factor(cyl)+disp+hp+drat)
+fit6<-update(fit1,mpg~factor(am)+factor(cyl)+disp+hp+drat+wt)
+fit7<-update(fit1,mpg~factor(am)+factor(cyl)+disp+hp+drat+wt+qsec)
+fit8<-update(fit1,mpg~factor(am)+factor(cyl)+disp+hp+drat+wt+qsec+factor(vs))
+fit9<-update(fit1,mpg~factor(am)+factor(cyl)+disp+hp+drat+wt+qsec+factor(vs)+factor(gear))
+fit10<-update(fit1,mpg~factor(am)+factor(cyl)+disp+hp+drat+wt+qsec+factor(vs)+factor(gear)+factor(carb))
+anova(fit1,fit2,fit3,fit4,fit5,fit6,fit7,fit8,fit9,fit10)
+```
+
+As the analysis of variance shows, it can be said that number of cylinders(cyl) and Gross horsepower (hp) affect mpg.
+
+From the Q-Q plot, there are several outliers ("Maserati Bora","Toyota Corolla","Volvo 142E")
+
+These outliers are removed and fit is calculated again.
+
+```{r, remove outliers, echo=FALSE,cache=TRUE}
+mtcarsno<-mtcars[-c(20,31,32),]
+fit<-lm(mpg~factor(am)+factor(cyl)+hp,data=mtcarsno)
+round(coef(fit),2)
+```
+
+Coeffissient of transmanual was 3.77. It suggests that Manual transmission is better for MPG by 3.77 miles per gallon.
+
+## Conclusion
+
+I conducted exploratory analysis and showed that manual transmission is better for mpg.
+Then I fitted the models to infer how much manual transmission is better than automatic transmission. As the model showed, manual transmission is better for mpg by 3.77 miles per gallon.
+
+## Appendices
+
+**compare hwy,cty vs other valuables in graph**
+
+```{r exploratory_data_analysis,fig.height=10, echo=FALSE,cache=TRUE}
+
+#compare mileage between auto and manual
+g_am<-ggplot(data=mtcars,aes(x=factor(am),y=mpg))+geom_boxplot()+
+    labs(title="transmission vs mpg")
+
+#compare mileage between number of cylinders
+g_cyl<-ggplot(data=mtcars,aes(x=factor(cyl),y=mpg))+geom_boxplot()+
+    labs(title="cylinders vs mpg")
+
+#compare mileage between displacement
+g_disp<-ggplot(data=mtcars,aes(x=disp,y=mpg))+geom_point()+
+    labs(title="cylinders vs mpg")
+
+#compare mileage between number of hp
+g_hp<-ggplot(data=mtcars,aes(x=hp,y=mpg))+geom_point()+
+    labs(title="Gross horsepower vs mpg")
+
+#compare mileage between number of drat
+g_drat<-ggplot(data=mtcars,aes(x=drat,y=mpg))+geom_point()+
+    labs(title="rear axle ratio vs mpg")
+
+#compare mileage between wt
+g_wt<-ggplot(data=mtcars,aes(x=wt,y=mpg))+geom_point()+
+    labs(title="Weight vs mpg",xlab="Weigt(1000 lbs)")
+
+#compare mileage between qsec
+g_qsec<-ggplot(data=mtcars,aes(x=qsec,y=mpg))+geom_point()+
+    labs(title="quarter mile time vs mpg")
+
+#compare mileage between Engine type
+g_vs<-ggplot(data=mtcars,aes(x=factor(vs),y=mpg))+geom_boxplot()+
+    labs(title="Engine vs mpg")
+
+#compare mileage between number of forward gears
+g_gear<-ggplot(data=mtcars,aes(x=factor(gear),y=mpg))+geom_boxplot()+
+    labs(title="Number of forward gears vs mpg")
+
+#compare mileage between number of carburetors
+g_carb<-ggplot(data=mtcars,aes(x=factor(carb),y=mpg))+geom_boxplot()+
+    labs(title="Number of carburetors vs mpg")
+
+grid.arrange(g_am,g_cyl,g_disp,g_hp,g_drat,g_wt,g_qsec,g_vs,g_am,g_gear,g_carb, ncol=2)
+```
