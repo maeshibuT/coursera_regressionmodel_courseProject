@@ -1,0 +1,151 @@
+---
+title: "MPG data exploring"
+author: "maesh"
+date: "5/2/2021"
+output: pdf_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Introduction
+
+In this course I explore the relationship between a set of variables and miles per gallon (MPG)
+
+Particularly I focus on the following two questions:
+
+1. Is an automatic or manual transmission better for MPG?
+
+2. Quantify the MPG difference between automatic and manual transmissions.
+
+## exploratory data analysis
+
+**processing data**
+
+```{r processing data, echo=FALSE, cache=TRUE,warning=FALSE}
+#load required package
+library(ggplot2)
+library(stringr)
+library(gridExtra)
+data(mpg)
+str(mpg)
+#transform variable "trans" to two category:"auto" and "manual"
+mpg$trans<-str_sub(mpg$trans,end= -5)
+table(mpg$trans)
+```
+
+**compare hwy,cty vs other valuables**
+
+(Graphs are shown in appendices) 
+
+As the graph shows, type of transmission,engine displacement, number of cylinders, drive type, fuel type and vehicle class seems to affect on city and highway mileage. It cannot be judged whether Year of manufacturing affect on mileage from the graph.
+
+According to the graphs below, city mileage and highway mileage has the similar characteristics. Here I focused on city mileage.
+
+## model selection
+
+I created several fitted model which contains variables of mpg datasets.
+Then I compared these fitted model by using analysis of variance (anova) to tell which variables are necessary to explain mileage change.
+
+```{r, modelselection, fig.height=4, echo=FALSE, cache=TRUE}
+#outcome:mileage (city:c,highway:h), variable:trans
+fit1c<-lm(cty~trans,data=mpg)
+#variables:trans,displ,factor(cyl),factor(drv),factor(fl),factor(class)
+fit2c<-update(fit1c,cty~trans+displ)
+fit3c<-update(fit1c,cty~trans+displ+factor(cyl))
+fit4c<-update(fit1c,cty~trans+displ+factor(cyl)+factor(drv))
+fit5c<-update(fit1c,cty~trans+displ+factor(cyl)+factor(drv)+factor(fl))
+fit6c<-update(fit1c,cty~trans+displ+factor(cyl)+factor(drv)+factor(fl)+factor(class))
+fit7c<-update(fit1c,cty~trans+displ+factor(cyl)+factor(drv)+factor(fl)+factor(class)+factor(year))
+anova(fit1c,fit2c,fit3c,fit4c,fit5c,fit6c,fit7c)
+#residual plot_QQplot
+plot(fit7c,which=2)
+```
+
+As the analysis of variance shows, it can be said that fit7c (contain 7 variables: trans,displ,cyl,drv,fl,class and year) is the most representative fitted model.
+
+From the Q-Q plot, there are several outliers (row no. 100,107,123,222)
+These outliers are removed and fit7c is calculated again.
+
+```{r, remove outliers, echo=FALSE,cache=TRUE}
+
+mpg2<-mpg[-c(100,107,123,222),]
+fit7c<-lm(cty~trans+displ+factor(cyl)+factor(drv)+factor(fl)+factor(class)+factor(year),data=mpg2)
+
+round(coef(fit7c),3)
+```
+
+Coeffissient of transmanual was 0.260. It suggests that Manual transmission is better for MPG by 0.260 miles per gallon.
+
+## Conclusion
+
+I conducted exploratory analysis and showed that manual transmission is better for MPG.
+Then I fitted the models to infer how much manual transmission is better than automatic transmission. As the model showed, manual transmission is better for MPG by 0.260 miles per gallon in city.
+
+It is necessary to analyze how much manual transmission is better in highway in next study.
+
+## Appendices
+
+**compare hwy,cty vs other valuables in graph**
+
+```{r exploratory_data_analysis,fig.height=2.8, echo=FALSE,cache=TRUE}
+
+#compare mileage between auto and manual
+
+cty_trans<-ggplot(data=mpg,aes(x=trans,y=cty))+geom_boxplot()+
+    labs(title="trans vs city mileage")
+hwy_trans<-ggplot(data=mpg,aes(x=trans,y=hwy))+geom_boxplot()+
+    labs(title="trans vs highway mileage")
+
+grid.arrange(cty_trans,hwy_trans,ncol=2)
+
+#compare mileage between displacement
+cty_displ<-ggplot(data=mpg,aes(x=displ,y=cty))+geom_point()+
+    labs(title="displ vs city mileage")
+hwy_displ<-ggplot(data=mpg,aes(x=displ,y=hwy))+geom_point()+
+    labs(title="displ vs highway mileage")
+
+grid.arrange(cty_displ,hwy_displ,ncol=2)
+
+#compare mileage between year of manufacturing
+cty_year<-ggplot(data=mpg,aes(x=factor(year),y=cty))+geom_boxplot()+
+    labs(title="year vs city mileage")
+hwy_year<-ggplot(data=mpg,aes(x=factor(year),y=hwy))+geom_boxplot()+
+    labs(title="year vs highway mileage")
+
+grid.arrange(cty_year,hwy_year,ncol=2)
+
+#compare mileage between number of cylinders
+cty_cyl<-ggplot(data=mpg,aes(x=factor(cyl),y=cty))+geom_boxplot()+
+    labs(title="cylinders vs city mileage")
+hwy_cyl<-ggplot(data=mpg,aes(x=factor(cyl),y=hwy))+geom_boxplot()+
+    labs(title="cylinders vs highway mileage")
+
+grid.arrange(cty_cyl,hwy_cyl,ncol=2)
+
+#compare mileage between number of drive type
+cty_drv<-ggplot(data=mpg,aes(x=factor(drv),y=cty))+geom_boxplot()+
+    labs(title="drive type vs city mileage")
+hwy_drv<-ggplot(data=mpg,aes(x=factor(drv),y=hwy))+geom_boxplot()+
+    labs(title="drive type vs highway mileage")
+
+grid.arrange(cty_drv,hwy_drv,ncol=2)
+
+#compare mileage between fuel type
+cty_fl<-ggplot(data=mpg,aes(x=factor(fl),y=cty))+geom_boxplot()+
+    labs(title="fuel type vs city mileage")
+hwy_fl<-ggplot(data=mpg,aes(x=factor(fl),y=hwy))+geom_boxplot()+
+    labs(title="fuel type vs highway mileage")
+
+grid.arrange(cty_fl,hwy_fl,ncol=2)
+
+#compare mileage between vehicle class
+cty_class<-ggplot(data=mpg,aes(x=factor(class),y=cty))+geom_boxplot()+
+    labs(title="vehicle class vs city mileage")+
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+hwy_class<-ggplot(data=mpg,aes(x=factor(class),y=hwy))+geom_boxplot()+
+    labs(title="vehicle class vs highway mileage")+
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+grid.arrange(cty_class,hwy_class,ncol=2)
+
+```
